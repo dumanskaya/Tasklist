@@ -5,10 +5,40 @@ interface Parameter {
     fun isValid(value: String): Boolean
 }
 
+class TaskPriority: Parameter {
+    var priority: String = "L"
+        set(value) {
+            if(isValid(value)) field = value
+        }
+
+    override fun isValid(value: String): Boolean {
+        val priorities = listOf<String>("C", "H", "N", "L")
+        return value.uppercase() in priorities
+    }
+
+    fun setValueFromUser(){
+        println("Input the task priority (C, H, N, L):")
+        var line = readln()
+        while (!isValid(line)) {
+            println("Input the task priority (C, H, N, L):")
+            line = readln()
+        }
+        this.priority = line
+    }
+
+    override fun toString(): String {
+        return this.priority
+    }
+
+}
+
 class TaskDate: Parameter {
     var date: String = "1970-01-01"
         set(value) {
-            if(isValid(value)) field = value
+            if(isValid(value)) {
+                val (year, month, day) = value.split("-").map {it.toInt()}
+                field = LocalDate(year, month, day).toString()
+            }
         }
 
     override fun isValid(value: String): Boolean {
@@ -79,16 +109,17 @@ class TaskTime: Parameter {
     }
 }
 
-
-
 class Task {
-    var lines = mutableListOf<String>()
+    var priority: TaskPriority = TaskPriority()
     var date: TaskDate = TaskDate()
     var time: TaskTime = TaskTime()
+    var lines = mutableListOf<String>()
+
 }
 
 fun createTask(): Task? {
     val task = Task()
+    task.priority.setValueFromUser()
     task.date.setValueFromUser()
     task.time.setValueFromUser()
 
@@ -111,7 +142,7 @@ fun printTasks(tasks: MutableList<Task>) {
     } else {
         for (i in tasks.indices) {
             val sep = (i + 1).toString().padEnd(3)
-            println("$sep${tasks[i].date} ${tasks[i].time}")
+            println("$sep${tasks[i].date} ${tasks[i].time} ${tasks[i].priority}")
             for (j in tasks[i].lines.indices) {
                 println("   ${tasks[i].lines[j]}")
             }
