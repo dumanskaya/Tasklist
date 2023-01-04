@@ -6,11 +6,9 @@ interface Parameter {
 }
 
 class TaskDate: Parameter {
-    var date: String = ""
+    var date: String = "1970-01-01"
         set(value) {
-            if(isValid(value)) {
-                field = value
-            }
+            if(isValid(value)) field = value
         }
 
     override fun isValid(value: String): Boolean {
@@ -46,16 +44,53 @@ class TaskDate: Parameter {
     }
 }
 
+class TaskTime: Parameter {
+    var time: String = "00:00"
+        set(value) {
+            if (isValid(value)) field = value
+        }
+
+    override fun isValid(value: String): Boolean {
+        val parts = value.split(":")
+        if (parts.size != 2) return false
+        try {
+            parts.map { it.toInt() }
+        } catch (e: NumberFormatException) {
+            return false
+        }
+        val (hours, minutes) = parts.map { it.toInt() }
+        if (hours in 0..23 && minutes in 0..59) return true
+        return false
+    }
+
+    fun setValueFromUser(){
+        println("Input the time (hh:mm):")
+        var line = readln()
+        while (!isValid(line)) {
+            println("The input time is invalid")
+            println("Input the time (hh:mm):")
+            line = readln()
+        }
+        this.time = line
+    }
+
+    override fun toString(): String {
+        return this.time
+    }
+}
+
 
 
 class Task {
     var lines = mutableListOf<String>()
     var date: TaskDate = TaskDate()
+    var time: TaskTime = TaskTime()
 }
 
 fun createTask(): Task? {
     val task = Task()
     task.date.setValueFromUser()
+    task.time.setValueFromUser()
 
     println("Input a new task (enter a blank line to end):")
     var line = readln().trim()
@@ -76,7 +111,7 @@ fun printTasks(tasks: MutableList<Task>) {
     } else {
         for (i in tasks.indices) {
             val sep = (i + 1).toString().padEnd(3)
-            println("$sep${tasks[i].date}")
+            println("$sep${tasks[i].date} ${tasks[i].time}")
             for (j in tasks[i].lines.indices) {
                 println("   ${tasks[i].lines[j]}")
             }
