@@ -1,39 +1,40 @@
 package tasklist
 import kotlinx.datetime.*
 
-interface Parameter {
-    fun isValid(value: String): Boolean
-}
-
-class TaskPriority: Parameter {
-    var priority: String = "L"
+abstract class Parameter {
+    open var value: String = ""
         set(value) {
             if(isValid(value)) field = value
         }
-
-    override fun isValid(value: String): Boolean {
-        val priorities = listOf<String>("C", "H", "N", "L")
-        return value.uppercase() in priorities
+    abstract val inputMessage: String
+    open val warningMessage: String = ""
+    abstract fun isValid(value: String): Boolean
+    override fun toString(): String {
+        return this.value
     }
-
     fun setValueFromUser(){
-        println("Input the task priority (C, H, N, L):")
+        println(inputMessage)
         var line = readln()
         while (!isValid(line)) {
-            println("Input the task priority (C, H, N, L):")
+            println("${warningMessage}\n${inputMessage}")
             line = readln()
         }
-        this.priority = line
+        this.value = line
     }
-
-    override fun toString(): String {
-        return this.priority
-    }
-
 }
 
-class TaskDate: Parameter {
-    var date: String = "1970-01-01"
+class TaskPriority: Parameter() {
+    override val inputMessage = "Input the task priority (C, H, N, L):"
+    override fun isValid(value: String): Boolean {
+        val priorities = listOf("C", "H", "N", "L")
+        return value.uppercase() in priorities
+    }
+}
+
+class TaskDate: Parameter() {
+    override val inputMessage = "Input the date (yyyy-mm-dd):"
+    override val warningMessage = "The input date is invalid"
+    override var value: String = "1970-01-01"
         set(value) {
             if(isValid(value)) {
                 val (year, month, day) = value.split("-").map {it.toInt()}
@@ -57,29 +58,11 @@ class TaskDate: Parameter {
         }
         return true
     }
-
-    fun setValueFromUser(){
-        println("Input the date (yyyy-mm-dd):")
-        var line = readln()
-        while (!isValid(line)) {
-            println("The input date is invalid")
-            println("Input the date (yyyy-mm-dd):")
-            line = readln()
-        }
-        this.date = line
-    }
-
-    override fun toString(): String {
-        return this.date
-    }
 }
 
-class TaskTime: Parameter {
-    var time: String = "00:00"
-        set(value) {
-            if (isValid(value)) field = value
-        }
-
+class TaskTime: Parameter() {
+    override val inputMessage = "Input the time (hh:mm):"
+    override val warningMessage = "The input time is invalid"
     override fun isValid(value: String): Boolean {
         val parts = value.split(":")
         if (parts.size != 2) return false
@@ -92,21 +75,6 @@ class TaskTime: Parameter {
         if (hours in 0..23 && minutes in 0..59) return true
         return false
     }
-
-    fun setValueFromUser(){
-        println("Input the time (hh:mm):")
-        var line = readln()
-        while (!isValid(line)) {
-            println("The input time is invalid")
-            println("Input the time (hh:mm):")
-            line = readln()
-        }
-        this.time = line
-    }
-
-    override fun toString(): String {
-        return this.time
-    }
 }
 
 class Task {
@@ -115,6 +83,11 @@ class Task {
     var time: TaskTime = TaskTime()
     var lines = mutableListOf<String>()
 
+    override fun toString(): String {
+        var result = "$date $time $priority"
+        result += lines.joinToString(prefix = "\n   ", separator = "\n   ", postfix = "\n")
+        return result
+    }
 }
 
 fun createTask(): Task? {
@@ -142,11 +115,7 @@ fun printTasks(tasks: MutableList<Task>) {
     } else {
         for (i in tasks.indices) {
             val sep = (i + 1).toString().padEnd(3)
-            println("$sep${tasks[i].date} ${tasks[i].time} ${tasks[i].priority}")
-            for (j in tasks[i].lines.indices) {
-                println("   ${tasks[i].lines[j]}")
-            }
-            println()
+            println("$sep${tasks[i]}")
         }
     }
 }
