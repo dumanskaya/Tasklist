@@ -28,7 +28,7 @@ abstract class Parameter {
 
 class TaskPriority: Parameter() {
     override val inputMessage = "Input the task priority (C, H, N, L):"
-    val priorities = listOf("C", "H", "N", "L")
+    private val priorities = listOf("C", "H", "N", "L")
     override fun isValid(value: String): Boolean = value.uppercase() in priorities
 }
 
@@ -94,10 +94,8 @@ fun printTasks(tasks: MutableList<Task>) {
     if (tasks.isEmpty()) {
         println("No tasks have been input")
     } else {
-        for (i in tasks.indices) {
-            val sep = (i + 1).toString().padEnd(PADDING_LENGTH)
-            println("$sep${tasks[i]}")
-        }
+        tasks.forEachIndexed { i, task ->
+            println("${(i + 1).toString().padEnd(PADDING_LENGTH)}$task")}
     }
 }
 
