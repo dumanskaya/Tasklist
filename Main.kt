@@ -1,5 +1,6 @@
 package tasklist
 import kotlinx.datetime.*
+import java.time.LocalTime
 
 abstract class Parameter {
     open var value: String = ""
@@ -12,7 +13,7 @@ abstract class Parameter {
     override fun toString(): String {
         return this.value
     }
-    fun setValueFromUser(){
+    fun inputValue(){
         println(inputMessage)
         var line = readln()
         while (!isValid(line)) {
@@ -42,39 +43,21 @@ class TaskDate: Parameter() {
             }
         }
 
-    override fun isValid(value: String): Boolean {
-        val parts = value.split('-')
-        if (parts.size != 3) return false
-        try {
-            parts.map { it.toInt() }
-        } catch (e: NumberFormatException) {
-            return false
-        }
-        try {
-            val (year, month, day) = parts.map { it.toInt() }
-            LocalDate(year, month, day)
-        } catch (e: IllegalArgumentException){
-            return false
-        }
-        return true
-    }
+    override fun isValid(value: String): Boolean = try {
+        val (year, month, day) = value.split('-').map { it.toInt() }
+        LocalDate(year, month, day)
+        true
+        } catch (e: Exception) { false }
 }
 
 class TaskTime: Parameter() {
     override val inputMessage = "Input the time (hh:mm):"
     override val warningMessage = "The input time is invalid"
-    override fun isValid(value: String): Boolean {
-        val parts = value.split(":")
-        if (parts.size != 2) return false
-        try {
-            parts.map { it.toInt() }
-        } catch (e: NumberFormatException) {
-            return false
-        }
-        val (hours, minutes) = parts.map { it.toInt() }
-        if (hours in 0..23 && minutes in 0..59) return true
-        return false
-    }
+    override fun isValid(value: String): Boolean = try {
+        val (hours, minutes) = value.split(":").map { it.toInt() }
+        LocalTime.of(hours, minutes)
+        true
+        } catch (e: Exception) { false }
 }
 
 class Task {
@@ -92,9 +75,9 @@ class Task {
 
 fun createTask(): Task? {
     val task = Task()
-    task.priority.setValueFromUser()
-    task.date.setValueFromUser()
-    task.time.setValueFromUser()
+    task.priority.inputValue()
+    task.date.inputValue()
+    task.time.inputValue()
 
     println("Input a new task (enter a blank line to end):")
     var line = readln().trim()
