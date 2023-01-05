@@ -2,6 +2,8 @@ package tasklist
 import kotlinx.datetime.*
 import java.time.LocalTime
 
+const val PADDING_LENGTH = 3
+
 abstract class Parameter {
     open var value: String = ""
         set(value) {
@@ -26,10 +28,8 @@ abstract class Parameter {
 
 class TaskPriority: Parameter() {
     override val inputMessage = "Input the task priority (C, H, N, L):"
-    override fun isValid(value: String): Boolean {
-        val priorities = listOf("C", "H", "N", "L")
-        return value.uppercase() in priorities
-    }
+    val priorities = listOf("C", "H", "N", "L")
+    override fun isValid(value: String): Boolean = value.uppercase() in priorities
 }
 
 class TaskDate: Parameter() {
@@ -66,11 +66,9 @@ class Task {
     var time: TaskTime = TaskTime()
     var lines = mutableListOf<String>()
 
-    override fun toString(): String {
-        var result = "$date $time $priority"
-        result += lines.joinToString(prefix = "\n   ", separator = "\n   ", postfix = "\n")
-        return result
-    }
+    override fun toString(): String = "$date $time $priority\n".padStart(PADDING_LENGTH) +
+            lines.joinToString(separator = "\n", postfix = "\n",
+                transform = { it.padStart(it.length + PADDING_LENGTH) })
 }
 
 fun createTask(): Task? {
@@ -97,7 +95,7 @@ fun printTasks(tasks: MutableList<Task>) {
         println("No tasks have been input")
     } else {
         for (i in tasks.indices) {
-            val sep = (i + 1).toString().padEnd(3)
+            val sep = (i + 1).toString().padEnd(PADDING_LENGTH)
             println("$sep${tasks[i]}")
         }
     }
