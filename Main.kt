@@ -90,25 +90,55 @@ fun createTask(): Task? {
     return task
 }
 
+fun isTasksListEmpty(tasks: MutableList<Task>): Boolean = if (tasks.isEmpty()) {
+    println("No tasks have been input")
+    true
+    } else { false }
+
+fun getValidIndex(tasks: MutableList<Task>): Int {
+    val n = tasks.size
+    println("Input the task number (1-$n):")
+    var index = readln()
+    while(true) {
+        val i = index.toIntOrNull()
+        if (i != null && i in 1..n) return i - 1
+        else {
+            println("Invalid task number")
+            println("Input the task number (1-$n):")
+            index = readln()
+        }}
+    }
+
+
 fun printTasks(tasks: MutableList<Task>) {
-    if (tasks.isEmpty()) {
-        println("No tasks have been input")
-    } else {
+    if (!isTasksListEmpty(tasks)) {
         tasks.forEachIndexed { i, task ->
             println("${(i + 1).toString().padEnd(PADDING_LENGTH)}$task")}
+    }
+}
+
+fun deleteTask(tasks: MutableList<Task>) {
+    if (tasks.isNotEmpty()) {
+        val i = getValidIndex(tasks)
+        tasks.removeAt(i)
+        println("The task is deleted")
     }
 }
 
 fun main() {
     val tasks = mutableListOf<Task>()
     while(true) {
-        println("Input an action (add, print, end):")
+        println("Input an action (add, print, delete, end):")
         when(readln()) {
             "add" -> {
                 val task = createTask()
                 if (task != null) tasks.add(task)
             }
             "print" -> printTasks(tasks)
+            "delete" -> {
+                printTasks(tasks)
+                deleteTask(tasks)
+            }
             "end" -> {
                 println("Tasklist exiting!")
                 break
