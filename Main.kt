@@ -53,6 +53,13 @@ class TaskDate: Parameter() {
 class TaskTime: Parameter() {
     override val inputMessage = "Input the time (hh:mm):"
     override val warningMessage = "The input time is invalid"
+    override var value: String = "00:00"
+        set(value) {
+            if(isValid(value)) {
+                val (hours, minutes) = value.split(":").map { it.toInt() }
+                field = LocalTime.of(hours, minutes).toString()
+            }
+        }
     override fun isValid(value: String): Boolean = try {
         val (hours, minutes) = value.split(":").map { it.toInt() }
         LocalTime.of(hours, minutes)
@@ -66,36 +73,44 @@ class Task {
     var time: TaskTime = TaskTime()
     var lines = mutableListOf<String>()
 
-    override fun toString(): String = "$date $time $priority\n".padStart(PADDING_LENGTH) +
+    fun tag(): Char {
+        val (year, month, day) = this.date.toString().split("-").map {it.toInt()}
+        val taskDate = LocalDate(year, month, day)
+        val currentDate = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+0")).date
+        val numberOfDays = currentDate.daysUntil(taskDate)
+        return when {
+            numberOfDays > 0 -> 'I'
+            numberOfDays < 0 -> 'O'
+            else -> 'T'
+        }
+    }
+    override fun toString(): String = "$date $time $priority ${tag()}\n".padStart(PADDING_LENGTH) +
             lines.joinToString(separator = "\n", postfix = "\n",
                 transform = { it.padStart(it.length + PADDING_LENGTH) })
 }
 
-fun createTask(): Task? {
+fun createTaskDescription(): MutableList<String> {
+    val description = mutableListOf<String>()
+    println("Input a new task (enter a blank line to end):")
+    var line = readln().trim()
+    if (line.isEmpty()) println("The task is blank")
+    while (line.isNotEmpty()) {
+        description.add(line)
+        line = readln().trim()
+    }
+    return description
+}
+
+fun createTask(): Task {
     val task = Task()
     task.priority.inputValue()
     task.date.inputValue()
     task.time.inputValue()
-
-    println("Input a new task (enter a blank line to end):")
-    var line = readln().trim()
-    if (line.isEmpty()) {
-        println("The task is blank")
-        return null
-    }
-    while (line.isNotEmpty()) {
-        task.lines.add(line)
-        line = readln().trim()
-    }
+    task.lines = createTaskDescription()
     return task
 }
 
-fun isTasksListEmpty(tasks: MutableList<Task>): Boolean = if (tasks.isEmpty()) {
-    println("No tasks have been input")
-    true
-    } else { false }
-
-fun getValidIndex(tasks: MutableList<Task>): Int {
+fun inputValidIndex(tasks: MutableList<Task>): Int {
     val n = tasks.size
     println("Input the task number (1-$n):")
     var index = readln()
@@ -111,16 +126,39 @@ fun getValidIndex(tasks: MutableList<Task>): Int {
 
 
 fun printTasks(tasks: MutableList<Task>) {
-    if (!isTasksListEmpty(tasks)) {
+    if (tasks.isEmpty()) {
+        println("No tasks have been input")
+    } else {
         tasks.forEachIndexed { i, task ->
             println("${(i + 1).toString().padEnd(PADDING_LENGTH)}$task")}
     }
 }
 
+fun editTask(tasks: MutableList<Task>) {
+    if (tasks.isEmpty()) return
+    val task = tasks[inputValidIndex(tasks)]
+    while(true) {
+        println("Input a field to edit (priority, date, time, task):")
+        when(readln()) {
+            "priority" -> { task.priority.inputValue(); break }
+            "date" -> { task.date.inputValue(); break }
+            "time" -> { task.time.inputValue(); break }
+            "task" -> {
+                val newDescription = createTaskDescription()
+                if (newDescription.isNotEmpty()) {
+                    task.lines = newDescription
+                }
+                break
+            }
+            else -> println("Invalid field")
+        }
+    }
+    println("The task is changed")
+}
+
 fun deleteTask(tasks: MutableList<Task>) {
     if (tasks.isNotEmpty()) {
-        val i = getValidIndex(tasks)
-        tasks.removeAt(i)
+        tasks.removeAt(inputValidIndex(tasks))
         println("The task is deleted")
     }
 }
@@ -128,21 +166,22 @@ fun deleteTask(tasks: MutableList<Task>) {
 fun main() {
     val tasks = mutableListOf<Task>()
     while(true) {
-        println("Input an action (add, print, delete, end):")
+        println("Input an action (add, print, edit, delete, end):")
         when(readln()) {
             "add" -> {
                 val task = createTask()
-                if (task != null) tasks.add(task)
+                if (task.lines.isNotEmpty()) tasks.add(task)
             }
             "print" -> printTasks(tasks)
+            "edit" -> {
+                printTasks(tasks)
+                editTask(tasks)
+            }
             "delete" -> {
                 printTasks(tasks)
                 deleteTask(tasks)
             }
-            "end" -> {
-                println("Tasklist exiting!")
-                break
-            }
+            "end" -> { println("Tasklist exiting!"); break }
             else -> println("The input action is invalid")
         }
     }
