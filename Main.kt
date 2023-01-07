@@ -84,6 +84,29 @@ class Task {
             else -> 'T'
         }
     }
+
+    fun isValid(): Boolean = lines.isEmpty()
+
+    fun edit() {
+        while(true) {
+            println("Input a field to edit (priority, date, time, task):")
+            when(readln()) {
+                "priority" -> { priority.inputValue(); break }
+                "date" -> { date.inputValue(); break }
+                "time" -> { time.inputValue(); break }
+                "task" -> {
+                    val newDescription = createTaskDescription()
+                    if (newDescription.isNotEmpty()) {
+                        lines = newDescription
+                    }
+                    break
+                }
+                else -> println("Invalid field")
+            }
+        }
+        println("The task is changed")
+    }
+
     override fun toString(): String = "$date $time $priority ${tag()}\n".padStart(PADDING_LENGTH) +
             lines.joinToString(separator = "\n", postfix = "\n",
                 transform = { it.padStart(it.length + PADDING_LENGTH) })
@@ -122,7 +145,7 @@ fun inputValidIndex(tasks: MutableList<Task>): Int {
             println("Input the task number (1-$n):")
             index = readln()
         }}
-    }
+}
 
 
 fun printTasks(tasks: MutableList<Task>) {
@@ -136,24 +159,7 @@ fun printTasks(tasks: MutableList<Task>) {
 
 fun editTask(tasks: MutableList<Task>) {
     if (tasks.isEmpty()) return
-    val task = tasks[inputValidIndex(tasks)]
-    while(true) {
-        println("Input a field to edit (priority, date, time, task):")
-        when(readln()) {
-            "priority" -> { task.priority.inputValue(); break }
-            "date" -> { task.date.inputValue(); break }
-            "time" -> { task.time.inputValue(); break }
-            "task" -> {
-                val newDescription = createTaskDescription()
-                if (newDescription.isNotEmpty()) {
-                    task.lines = newDescription
-                }
-                break
-            }
-            else -> println("Invalid field")
-        }
-    }
-    println("The task is changed")
+    tasks[inputValidIndex(tasks)].edit()
 }
 
 fun deleteTask(tasks: MutableList<Task>) {
@@ -170,7 +176,7 @@ fun main() {
         when(readln()) {
             "add" -> {
                 val task = createTask()
-                if (task.lines.isNotEmpty()) tasks.add(task)
+                if (task.isValid()) tasks.add(task)
             }
             "print" -> printTasks(tasks)
             "edit" -> {
