@@ -1,6 +1,7 @@
 package tasklist
+
+import java.io.File
 import kotlinx.datetime.*
-import java.time.LocalTime
 
 const val BORDER_KNOT = "+"
 const val HORIZONTAL_BORDER = "-"
@@ -11,79 +12,10 @@ const val TIME_WIDTH = 7
 const val PRIORITY_WIDTH = 3
 const val TAG_WIDTH = 3
 const val TASK_WIDTH = 44
+const val FILE_NAME = "tasklist.json"
 
 val widths = listOf(NUMBER_WIDTH, DATE_WIDTH, TIME_WIDTH, PRIORITY_WIDTH, TAG_WIDTH, TASK_WIDTH)
 val header = listOf("N", "Date", "Time", "P", "D", "Task ")
-
-abstract class Parameter {
-    open var value: String = ""
-        set(value) {
-            if(isValid(value)) field = value
-        }
-    abstract val inputMessage: String
-    open val warningMessage: String = ""
-    abstract fun isValid(value: String): Boolean
-    override fun toString(): String {
-        return this.value
-    }
-    fun inputValue(){
-        println(inputMessage)
-        var line = readln()
-        while (!isValid(line)) {
-            println("${warningMessage}\n${inputMessage}")
-            line = readln()
-        }
-        this.value = line
-    }
-}
-
-class TaskPriority: Parameter() {
-    override val inputMessage = "Input the task priority (C, H, N, L):"
-    private val priorities = listOf("C", "H", "N", "L")
-    override fun isValid(value: String): Boolean = value.uppercase() in priorities
-    fun getColor(): String = when(value.uppercase()) {
-            "C" -> " \u001B[101m \u001B[0m "
-            "H" -> " \u001B[103m \u001B[0m "
-            "N" -> " \u001B[102m \u001B[0m "
-            "L" -> " \u001B[104m \u001B[0m "
-            else -> " \u001B[0m "
-        }
-}
-
-class TaskDate: Parameter() {
-    override val inputMessage = "Input the date (yyyy-mm-dd):"
-    override val warningMessage = "The input date is invalid"
-    override var value: String = "1970-01-01"
-        set(value) {
-            if(isValid(value)) {
-                val (year, month, day) = value.split("-").map {it.toInt()}
-                field = LocalDate(year, month, day).toString()
-            }
-        }
-
-    override fun isValid(value: String): Boolean = try {
-        val (year, month, day) = value.split('-').map { it.toInt() }
-        LocalDate(year, month, day)
-        true
-        } catch (e: Exception) { false }
-}
-
-class TaskTime: Parameter() {
-    override val inputMessage = "Input the time (hh:mm):"
-    override val warningMessage = "The input time is invalid"
-    override var value: String = "00:00"
-        set(value) {
-            if(isValid(value)) {
-                val (hours, minutes) = value.split(":").map { it.toInt() }
-                field = LocalTime.of(hours, minutes).toString()
-            }
-        }
-    override fun isValid(value: String): Boolean = try {
-        val (hours, minutes) = value.split(":").map { it.toInt() }
-        LocalTime.of(hours, minutes)
-        true
-        } catch (e: Exception) { false }
-}
 
 class Task {
     var priority: TaskPriority = TaskPriority()
@@ -91,16 +23,23 @@ class Task {
     var time: TaskTime = TaskTime()
     var lines = mutableListOf<String>()
 
-    fun tag(): String {
-        val (year, month, day) = this.date.toString().split("-").map {it.toInt()}
+    fun tag(): Char {
+        val (year, month, day) = this.date.toString().split("-").map { it.toInt() }
         val taskDate = LocalDate(year, month, day)
         val currentDate = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1")).date
         val numberOfDays = currentDate.daysUntil(taskDate)
         return when {
-            numberOfDays > 0 -> " \u001B[102m \u001B[0m "
-            numberOfDays < 0 -> " \u001B[101m \u001B[0m "
-            else -> " \u001B[103m \u001B[0m "
+            numberOfDays > 0 -> 'I'
+            numberOfDays < 0 -> 'O'
+            else -> 'T'
         }
+    }
+
+    fun tagColored(): String = when (tag()) {
+            'I' -> " \u001B[102m \u001B[0m "
+            'O' -> " \u001B[101m \u001B[0m "
+            'T' -> " \u001B[103m \u001B[0m "
+            else -> ""
     }
 
     fun isValid(): Boolean = lines.isNotEmpty()
@@ -124,8 +63,6 @@ class Task {
         }
         println("The task is changed")
     }
-    override fun toString(): String = "$date $time $priority ${tag()}\n" +
-            lines.joinToString(separator = "\n", postfix = "\n")
 }
 
 fun createTaskDescription(): MutableList<String> {
@@ -200,7 +137,7 @@ fun printTasks(tasks: MutableList<Task>) {
         printHorizontalLine()
         for ((i, task) in tasks.withIndex()) {
             val firstLine = addVerticalBorders(listOf("${i + 1}", task.date, task.time,
-                task.priority.getColor(), task.tag())
+                task.priority.getColor(), task.tagColored())
                 .mapIndexed() { j, s -> centerString(s, widths[j]) })
             val descriptions = splitAndPadDescription(task.lines)
             val n = descriptions.size
@@ -226,7 +163,11 @@ fun deleteTask(tasks: MutableList<Task>) {
 }
 
 fun main() {
-    val tasks = mutableListOf<Task>()
+    val jsonFile = File(FILE_NAME)
+    var tasks = mutableListOf<Task>()
+    if (jsonFile.exists()) {
+        tasks = taskListAdapter.fromJson(jsonFile.readText())!!.toMutableList()
+    }
     while(true) {
         println("Input an action (add, print, edit, delete, end):")
         when(readln()) {
@@ -243,7 +184,11 @@ fun main() {
                 printTasks(tasks)
                 deleteTask(tasks)
             }
-            "end" -> { println("Tasklist exiting!"); break }
+            "end" -> {
+                jsonFile.writeText(taskListAdapter.toJson(tasks))
+                println("Tasklist exiting!")
+                break
+            }
             else -> println("The input action is invalid")
         }
     }
