@@ -17,29 +17,39 @@ const val FILE_NAME = "tasklist.json"
 val widths = listOf(NUMBER_WIDTH, DATE_WIDTH, TIME_WIDTH, PRIORITY_WIDTH, TAG_WIDTH, TASK_WIDTH)
 val header = listOf("N", "Date", "Time", "P", "D", "Task ")
 
+enum class Color(val color: String) {
+    red("\u001B[101m \u001B[0m"),
+    yellow("\u001B[103m \u001B[0m"),
+    green("\u001B[102m \u001B[0m"),
+    blue("\u001B[104m \u001B[0m")
+}
+
 class Task {
     var priority: TaskPriority = TaskPriority()
     var date: TaskDate = TaskDate()
     var time: TaskTime = TaskTime()
     var lines = mutableListOf<String>()
+    enum class Tag {I, O, T}
 
-    fun tag(): Char {
+    fun tag(): Tag {
         val (year, month, day) = this.date.toString().split("-").map { it.toInt() }
         val taskDate = LocalDate(year, month, day)
         val currentDate = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1")).date
         val numberOfDays = currentDate.daysUntil(taskDate)
         return when {
-            numberOfDays > 0 -> 'I'
-            numberOfDays < 0 -> 'O'
-            else -> 'T'
+            numberOfDays > 0 -> Tag.I
+            numberOfDays < 0 -> Tag.O
+            else -> Tag.T
         }
     }
 
-    fun tagColored(): String = when (tag()) {
-            'I' -> " \u001B[102m \u001B[0m "
-            'O' -> " \u001B[101m \u001B[0m "
-            'T' -> " \u001B[103m \u001B[0m "
-            else -> ""
+    fun tagColored(): String {
+    val color = when (tag()) {
+        Tag.I -> Color.green
+        Tag.O -> Color.red
+        Tag.T -> Color.yellow
+        }
+    return " ${color.color} "
     }
 
     fun isValid(): Boolean = lines.isNotEmpty()
@@ -62,6 +72,17 @@ class Task {
             }
         }
         println("The task is changed")
+    }
+
+    fun println(index: Int) {
+        val firstLine = addVerticalBorders(listOf("${index + 1}", date, time, priority.getColor(),
+            tagColored()).mapIndexed() { j, s -> centerString(s, widths[j]) })
+        val descriptions = splitAndPadDescription(lines)
+        val n = descriptions.size
+        println("$firstLine${descriptions[0]}$VERTICAL_BORDER")
+        for (i in 1 until n) {
+            println("${emptyRowWithBorders()}${descriptions[i]}$VERTICAL_BORDER")
+        }
     }
 }
 
@@ -100,13 +121,8 @@ fun inputValidIndex(tasks: MutableList<Task>): Int {
         }}
 }
 
-fun printHorizontalLine() {
-    var line = BORDER_KNOT
-    for (w in widths) {
-        line += HORIZONTAL_BORDER.repeat(w) + BORDER_KNOT
-    }
-    println(line)
-}
+fun getHorizontalLine(symbol: String, border: String): String  = addVerticalBorders(widths
+    .map {symbol.repeat(it)}, border)
 
 fun centerString(str: Any, width: Int): String {
     val value = str.toString()
@@ -114,9 +130,8 @@ fun centerString(str: Any, width: Int): String {
     return value.padStart(n / 2 + value.length).padEnd(width)
 }
 
-fun addVerticalBorders(myList: List<Any>): String = myList
-    .joinToString(separator = VERTICAL_BORDER, prefix = VERTICAL_BORDER,
-        postfix = VERTICAL_BORDER)
+fun addVerticalBorders(myList: List<Any>, border: String = VERTICAL_BORDER): String = myList
+    .joinToString(separator = border, prefix = border, postfix = border)
 
 fun getHeader(): String = addVerticalBorders(header.mapIndexed { i, s -> centerString(s, widths[i]) })
 
@@ -132,20 +147,13 @@ fun printTasks(tasks: MutableList<Task>) {
     if (tasks.isEmpty()) {
         println("No tasks have been input")
     } else {
-        printHorizontalLine()
+        val horizontalLine = getHorizontalLine(HORIZONTAL_BORDER, BORDER_KNOT)
+        println(horizontalLine)
         println(getHeader())
-        printHorizontalLine()
+        println(horizontalLine)
         for ((i, task) in tasks.withIndex()) {
-            val firstLine = addVerticalBorders(listOf("${i + 1}", task.date, task.time,
-                task.priority.getColor(), task.tagColored())
-                .mapIndexed() { j, s -> centerString(s, widths[j]) })
-            val descriptions = splitAndPadDescription(task.lines)
-            val n = descriptions.size
-            println("$firstLine${descriptions[0]}$VERTICAL_BORDER")
-            for (i in 1 until n) {
-                println("${emptyRowWithBorders()}${descriptions[i]}$VERTICAL_BORDER")
-            }
-            printHorizontalLine()
+            task.println(i)
+            println(horizontalLine)
         }
     }
 }

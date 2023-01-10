@@ -26,15 +26,22 @@ abstract class Parameter {
 }
 
 class TaskPriority: Parameter() {
-    override val inputMessage = "Input the task priority (C, H, N, L):"
-    private val priorities = listOf("C", "H", "N", "L")
-    override fun isValid(value: String): Boolean = value.uppercase() in priorities
-    fun getColor(): String = when(value.uppercase()) {
-        "C" -> " \u001B[101m \u001B[0m "
-        "H" -> " \u001B[103m \u001B[0m "
-        "N" -> " \u001B[102m \u001B[0m "
-        "L" -> " \u001B[104m \u001B[0m "
-        else -> " \u001B[0m "
+    enum class Priority {C, H, N, L}
+    val priorityList = Priority.values().joinToString(", ") { it.toString() }
+    override val inputMessage = "Input the task priority ($priorityList):"
+    override fun isValid(value: String) = try {
+        Priority.valueOf(value.uppercase())
+        true
+    } catch(e: IllegalArgumentException) { false }
+
+    fun getColor(): String {
+        val color = when(Priority.valueOf(value.uppercase())) {
+            Priority.C -> Color.red
+            Priority.H -> Color.yellow
+            Priority.N -> Color.green
+            Priority.L -> Color.blue
+        }
+        return " ${color.color} "
     }
 }
 
