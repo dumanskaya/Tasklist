@@ -17,11 +17,11 @@ const val FILE_NAME = "tasklist.json"
 val widths = listOf(NUMBER_WIDTH, DATE_WIDTH, TIME_WIDTH, PRIORITY_WIDTH, TAG_WIDTH, TASK_WIDTH)
 val header = listOf("N", "Date", "Time", "P", "D", "Task ")
 
-enum class Color(val color: String) {
-    red("\u001B[101m \u001B[0m"),
-    yellow("\u001B[103m \u001B[0m"),
-    green("\u001B[102m \u001B[0m"),
-    blue("\u001B[104m \u001B[0m")
+enum class Color(val code: String) {
+    Red("\u001B[101m \u001B[0m"),
+    Yellow("\u001B[103m \u001B[0m"),
+    Green("\u001B[102m \u001B[0m"),
+    Blue("\u001B[104m \u001B[0m")
 }
 
 class Task {
@@ -30,7 +30,6 @@ class Task {
     var time: TaskTime = TaskTime()
     var lines = mutableListOf<String>()
     enum class Tag {I, O, T}
-
     fun tag(): Tag {
         val (year, month, day) = this.date.toString().split("-").map { it.toInt() }
         val taskDate = LocalDate(year, month, day)
@@ -42,14 +41,13 @@ class Task {
             else -> Tag.T
         }
     }
-
     fun tagColored(): String {
-    val color = when (tag()) {
-        Tag.I -> Color.green
-        Tag.O -> Color.red
-        Tag.T -> Color.yellow
-        }
-    return " ${color.color} "
+        val color = when (tag()) {
+            Tag.I -> Color.Green
+            Tag.O -> Color.Red
+            Tag.T -> Color.Yellow
+            }
+        return " ${color.code} "
     }
 
     fun isValid(): Boolean = lines.isNotEmpty()
@@ -76,8 +74,8 @@ class Task {
 
     fun println(index: Int) {
         val firstLine = addVerticalBorders(listOf("${index + 1}", date, time, priority.getColor(),
-            tagColored()).mapIndexed() { j, s -> centerString(s, widths[j]) })
-        val descriptions = splitAndPadDescription(lines)
+            tagColored()).mapIndexed { j, s -> centerString(s, widths[j]) })
+        val descriptions = splitAndPadDescription(lines, TASK_WIDTH)
         val n = descriptions.size
         println("$firstLine${descriptions[0]}$VERTICAL_BORDER")
         for (i in 1 until n) {
@@ -86,7 +84,7 @@ class Task {
     }
 }
 
-fun createTaskDescription(): MutableList<String> {
+ fun createTaskDescription(): MutableList<String> {
     val description = mutableListOf<String>()
     println("Input a new task (enter a blank line to end):")
     var line = readln().trim()
@@ -109,16 +107,13 @@ fun createTask(): Task {
 
 fun inputValidIndex(tasks: MutableList<Task>): Int {
     val n = tasks.size
-    println("Input the task number (1-$n):")
-    var index = readln()
     while(true) {
+        println("Input the task number (1-$n):")
+        var index = readln()
         val i = index.toIntOrNull()
         if (i != null && i in 1..n) return i - 1
-        else {
-            println("Invalid task number")
-            println("Input the task number (1-$n):")
-            index = readln()
-        }}
+        else println("Invalid task number")
+        }
 }
 
 fun getHorizontalLine(symbol: String, border: String): String  = addVerticalBorders(widths
@@ -135,13 +130,13 @@ fun addVerticalBorders(myList: List<Any>, border: String = VERTICAL_BORDER): Str
 
 fun getHeader(): String = addVerticalBorders(header.mapIndexed { i, s -> centerString(s, widths[i]) })
 
-fun emptyRowWithBorders(): String = addVerticalBorders(List<String>(5) { "" }.
+fun emptyRowWithBorders(): String = addVerticalBorders(List(5) { "" }.
     mapIndexed { i, s ->  centerString(s, widths[i]) })
 
-fun splitAndPadDescription(lines: List<String>): List<String> = lines
-    .map {it.chunked(TASK_WIDTH)}
+fun splitAndPadDescription(lines: List<String>, width: Int): List<String> = lines
+    .map {it.chunked(width)}
     .flatten()
-    .map { it.padEnd(TASK_WIDTH) }
+    .map { it.padEnd(width) }
 
 fun printTasks(tasks: MutableList<Task>) {
     if (tasks.isEmpty()) {

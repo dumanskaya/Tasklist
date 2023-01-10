@@ -36,12 +36,12 @@ class TaskPriority: Parameter() {
 
     fun getColor(): String {
         val color = when(Priority.valueOf(value.uppercase())) {
-            Priority.C -> Color.red
-            Priority.H -> Color.yellow
-            Priority.N -> Color.green
-            Priority.L -> Color.blue
+            Priority.C -> Color.Red
+            Priority.H -> Color.Yellow
+            Priority.N -> Color.Green
+            Priority.L -> Color.Blue
         }
-        return " ${color.color} "
+        return " ${color.code} "
     }
 }
 
