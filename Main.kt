@@ -1,5 +1,6 @@
 package tasklist
 
+import com.squareup.moshi.JsonClass
 import java.io.File
 import kotlinx.datetime.*
 
@@ -24,17 +25,17 @@ enum class Color(val code: String) {
     Blue("\u001B[104m \u001B[0m")
 }
 
+@JsonClass(generateAdapter = true)
 class Task {
     var priority: TaskPriority = TaskPriority()
     var date: TaskDate = TaskDate()
     var time: TaskTime = TaskTime()
-    var lines = mutableListOf<String>()
+    var description: TaskDescription = TaskDescription()
+
     enum class Tag {I, O, T}
     fun tag(): Tag {
-        val (year, month, day) = this.date.toString().split("-").map { it.toInt() }
-        val taskDate = LocalDate(year, month, day)
         val currentDate = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1")).date
-        val numberOfDays = currentDate.daysUntil(taskDate)
+        val numberOfDays = currentDate.daysUntil(date.value!!)
         return when {
             numberOfDays > 0 -> Tag.I
             numberOfDays < 0 -> Tag.O
@@ -50,7 +51,7 @@ class Task {
         return " ${color.code} "
     }
 
-    fun isValid(): Boolean = lines.isNotEmpty()
+    fun isValid(): Boolean = description.value!!.isNotEmpty()
 
     fun edit() {
         while(true) {
@@ -59,13 +60,7 @@ class Task {
                 "priority" -> { priority.inputValue(); break }
                 "date" -> { date.inputValue(); break }
                 "time" -> { time.inputValue(); break }
-                "task" -> {
-                    val newDescription = createTaskDescription()
-                    if (newDescription.isNotEmpty()) {
-                        lines = newDescription
-                    }
-                    break
-                }
+                "task" -> { description.inputValue(); break }
                 else -> println("Invalid field")
             }
         }
@@ -75,7 +70,7 @@ class Task {
     fun println(index: Int) {
         val firstLine = addVerticalBorders(listOf("${index + 1}", date, time, priority.getColor(),
             tagColored()).mapIndexed { j, s -> centerString(s, widths[j]) })
-        val descriptions = splitAndPadDescription(lines, TASK_WIDTH)
+        val descriptions = splitAndPadDescription(description.value!!, TASK_WIDTH)
         val n = descriptions.size
         println("$firstLine${descriptions[0]}$VERTICAL_BORDER")
         for (i in 1 until n) {
@@ -84,32 +79,20 @@ class Task {
     }
 }
 
- fun createTaskDescription(): MutableList<String> {
-    val description = mutableListOf<String>()
-    println("Input a new task (enter a blank line to end):")
-    var line = readln().trim()
-    if (line.isEmpty()) println("The task is blank")
-    while (line.isNotEmpty()) {
-        description.add(line)
-        line = readln().trim()
-    }
-    return description
-}
-
 fun createTask(): Task {
     val task = Task()
     task.priority.inputValue()
     task.date.inputValue()
     task.time.inputValue()
-    task.lines = createTaskDescription()
+    task.description.inputValue()
     return task
 }
 
-fun inputValidIndex(tasks: MutableList<Task>): Int {
-    val n = tasks.size
+
+fun inputValidIndex(n: Int): Int {
     while(true) {
         println("Input the task number (1-$n):")
-        var index = readln()
+        val index = readln()
         val i = index.toIntOrNull()
         if (i != null && i in 1..n) return i - 1
         else println("Invalid task number")
@@ -155,12 +138,12 @@ fun printTasks(tasks: MutableList<Task>) {
 
 fun editTask(tasks: MutableList<Task>) {
     if (tasks.isEmpty()) return
-    tasks[inputValidIndex(tasks)].edit()
+    tasks[inputValidIndex(tasks.size)].edit()
 }
 
 fun deleteTask(tasks: MutableList<Task>) {
     if (tasks.isNotEmpty()) {
-        tasks.removeAt(inputValidIndex(tasks))
+        tasks.removeAt(inputValidIndex(tasks.size))
         println("The task is deleted")
     }
 }

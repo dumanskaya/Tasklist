@@ -1,41 +1,42 @@
 package tasklist
 
+import com.squareup.moshi.JsonClass
 import kotlinx.datetime.LocalDate
 import java.time.LocalTime
 
-abstract class Parameter {
-    open var value: String = ""
-        set(value) {
-            if(isValid(value)) field = value
-        }
+abstract class Parameter<T> {
+    var value: T? = null
+    fun set(t: T) {
+            value = t
+    }
     abstract val inputMessage: String
     open val warningMessage: String = ""
-    abstract fun isValid(value: String): Boolean
+    abstract fun fromString(str: String): T?
     override fun toString(): String {
-        return this.value
+        return this.value.toString()
     }
-    fun inputValue(){
+    open fun inputValue(){
         println(inputMessage)
         var line = readln()
-        while (!isValid(line)) {
+        while (fromString(line) == null) {
             println("${warningMessage}\n${inputMessage}")
             line = readln()
         }
-        this.value = line
+        this.value = fromString(line)
     }
 }
 
-class TaskPriority: Parameter() {
+@JsonClass(generateAdapter = true)
+class TaskPriority: Parameter<TaskPriority.Priority>() {
     enum class Priority {C, H, N, L}
-    val priorityList = Priority.values().joinToString(", ") { it.toString() }
+    private val priorityList = Priority.values().joinToString(", ") { it.toString() }
     override val inputMessage = "Input the task priority ($priorityList):"
-    override fun isValid(value: String) = try {
-        Priority.valueOf(value.uppercase())
-        true
-    } catch(e: IllegalArgumentException) { false }
+    override fun fromString(str: String): Priority? = try {
+        Priority.valueOf(str.uppercase())
+    } catch(e: IllegalArgumentException) { null }
 
     fun getColor(): String {
-        val color = when(Priority.valueOf(value.uppercase())) {
+        val color = when(value!!) {
             Priority.C -> Color.Red
             Priority.H -> Color.Yellow
             Priority.N -> Color.Green
@@ -45,37 +46,41 @@ class TaskPriority: Parameter() {
     }
 }
 
-class TaskDate: Parameter() {
+@JsonClass(generateAdapter = true)
+class TaskDate: Parameter<LocalDate>() {
     override val inputMessage = "Input the date (yyyy-mm-dd):"
     override val warningMessage = "The input date is invalid"
-    override var value: String = "1970-01-01"
-        set(value) {
-            if(isValid(value)) {
-                val (year, month, day) = value.split("-").map {it.toInt()}
-                field = LocalDate(year, month, day).toString()
-            }
-        }
-
-    override fun isValid(value: String): Boolean = try {
-        val (year, month, day) = value.split('-').map { it.toInt() }
+    override fun fromString(str: String): LocalDate? = try {
+        val (year, month, day) = str.split('-').map { it.toInt() }
         LocalDate(year, month, day)
-        true
-    } catch (e: Exception) { false }
+    } catch (e: Exception) { null }
 }
 
-class TaskTime: Parameter() {
+@JsonClass(generateAdapter = true)
+class TaskTime: Parameter<LocalTime>() {
     override val inputMessage = "Input the time (hh:mm):"
     override val warningMessage = "The input time is invalid"
-    override var value: String = "00:00"
-        set(value) {
-            if(isValid(value)) {
-                val (hours, minutes) = value.split(":").map { it.toInt() }
-                field = LocalTime.of(hours, minutes).toString()
-            }
-        }
-    override fun isValid(value: String): Boolean = try {
-        val (hours, minutes) = value.split(":").map { it.toInt() }
+    override fun fromString(str: String): LocalTime? = try {
+        val (hours, minutes) = str.split(":").map { it.toInt() }
         LocalTime.of(hours, minutes)
-        true
-    } catch (e: Exception) { false }
+    } catch (e: Exception) { null }
+}
+
+@JsonClass(generateAdapter = true)
+class TaskDescription: Parameter<MutableList<String>> () {
+    override val inputMessage: String = "Input a new task (enter a blank line to end):"
+    override val warningMessage = "The task is blank"
+    override fun inputValue() {
+        val description = mutableListOf<String>()
+        println(inputMessage)
+        var line = readln().trim()
+        if (line.isEmpty()) println(warningMessage)
+        while (line.isNotEmpty()) {
+            description.add(line)
+            line = readln().trim()
+        }
+        value = description
+    }
+
+    override fun fromString(str: String): MutableList<String>? = str.split("/n").toMutableList()
 }
