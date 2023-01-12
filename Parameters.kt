@@ -82,5 +82,5 @@ class TaskDescription: Parameter<MutableList<String>> () {
         value = description
     }
 
-    override fun fromString(str: String): MutableList<String>? = str.split("/n").toMutableList()
+    override fun fromString(str: String): MutableList<String> = str.split("/n").toMutableList()
 }

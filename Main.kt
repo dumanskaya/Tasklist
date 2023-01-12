@@ -4,19 +4,7 @@ import com.squareup.moshi.JsonClass
 import java.io.File
 import kotlinx.datetime.*
 
-const val BORDER_KNOT = "+"
-const val HORIZONTAL_BORDER = "-"
-const val VERTICAL_BORDER = "|"
-const val NUMBER_WIDTH = 4
-const val DATE_WIDTH = 12
-const val TIME_WIDTH = 7
-const val PRIORITY_WIDTH = 3
-const val TAG_WIDTH = 3
-const val TASK_WIDTH = 44
 const val FILE_NAME = "tasklist.json"
-
-val widths = listOf(NUMBER_WIDTH, DATE_WIDTH, TIME_WIDTH, PRIORITY_WIDTH, TAG_WIDTH, TASK_WIDTH)
-val header = listOf("N", "Date", "Time", "P", "D", "Task ")
 
 enum class Color(val code: String) {
     Red("\u001B[101m \u001B[0m"),
@@ -31,9 +19,9 @@ class Task {
     var date: TaskDate = TaskDate()
     var time: TaskTime = TaskTime()
     var description: TaskDescription = TaskDescription()
+    enum class Tag { I, O, T }
 
-    enum class Tag {I, O, T}
-    fun tag(): Tag {
+    private fun tag(): Tag {
         val currentDate = Clock.System.now().toLocalDateTime(TimeZone.of("UTC+1")).date
         val numberOfDays = currentDate.daysUntil(date.value!!)
         return when {
@@ -42,22 +30,23 @@ class Task {
             else -> Tag.T
         }
     }
-    fun tagColored(): String {
+
+    private fun tagColored(): String {
         val color = when (tag()) {
             Tag.I -> Color.Green
             Tag.O -> Color.Red
             Tag.T -> Color.Yellow
-            }
+        }
         return " ${color.code} "
     }
 
     fun isValid(): Boolean = description.value!!.isNotEmpty()
 
     fun edit() {
-        while(true) {
+        while (true) {
             println("Input a field to edit (priority, date, time, task):")
-            when(readln()) {
-                "priority" -> { priority.inputValue(); break }
+            when (readln()) {
+                "priority" -> {priority.inputValue(); break }
                 "date" -> { date.inputValue(); break }
                 "time" -> { time.inputValue(); break }
                 "task" -> { description.inputValue(); break }
@@ -67,9 +56,17 @@ class Task {
         println("The task is changed")
     }
 
+//    fun getPrintableList(index: Int, descriptionWidth: Int): List<List<String>> {
+//        var printable = listOf("${index + 1}", date, time,
+//            priority.getColor(), tagColored())
+//            .map { s -> listOf(s.toString()) }
+//        printable += splitAndPadDescription(description.value!!, descriptionWidth)
+//    }
+
     fun println(index: Int) {
-        val firstLine = addVerticalBorders(listOf("${index + 1}", date, time, priority.getColor(),
-            tagColored()).mapIndexed { j, s -> centerString(s, widths[j]) })
+        val firstLine = addVerticalBorders(listOf("${index + 1}", date, time,
+            priority.getColor(), tagColored())
+            .mapIndexed { j, s -> centerString(s, widths[j]) })
         val descriptions = splitAndPadDescription(description.value!!, TASK_WIDTH)
         val n = descriptions.size
         println("$firstLine${descriptions[0]}$VERTICAL_BORDER")
@@ -79,7 +76,7 @@ class Task {
     }
 }
 
-fun createTask(): Task {
+fun inputTask(): Task {
     val task = Task()
     task.priority.inputValue()
     task.date.inputValue()
@@ -88,38 +85,15 @@ fun createTask(): Task {
     return task
 }
 
-
 fun inputValidIndex(n: Int): Int {
-    while(true) {
+    while (true) {
         println("Input the task number (1-$n):")
         val index = readln()
         val i = index.toIntOrNull()
         if (i != null && i in 1..n) return i - 1
         else println("Invalid task number")
-        }
+    }
 }
-
-fun getHorizontalLine(symbol: String, border: String): String  = addVerticalBorders(widths
-    .map {symbol.repeat(it)}, border)
-
-fun centerString(str: Any, width: Int): String {
-    val value = str.toString()
-    val n = width - value.length
-    return value.padStart(n / 2 + value.length).padEnd(width)
-}
-
-fun addVerticalBorders(myList: List<Any>, border: String = VERTICAL_BORDER): String = myList
-    .joinToString(separator = border, prefix = border, postfix = border)
-
-fun getHeader(): String = addVerticalBorders(header.mapIndexed { i, s -> centerString(s, widths[i]) })
-
-fun emptyRowWithBorders(): String = addVerticalBorders(List(5) { "" }.
-    mapIndexed { i, s ->  centerString(s, widths[i]) })
-
-fun splitAndPadDescription(lines: List<String>, width: Int): List<String> = lines
-    .map {it.chunked(width)}
-    .flatten()
-    .map { it.padEnd(width) }
 
 fun printTasks(tasks: MutableList<Task>) {
     if (tasks.isEmpty()) {
@@ -154,11 +128,11 @@ fun main() {
     if (jsonFile.exists()) {
         tasks = taskListAdapter.fromJson(jsonFile.readText())!!.toMutableList()
     }
-    while(true) {
+    while (true) {
         println("Input an action (add, print, edit, delete, end):")
-        when(readln()) {
+        when (readln()) {
             "add" -> {
-                val task = createTask()
+                val task = inputTask()
                 if (task.isValid()) tasks.add(task)
             }
             "print" -> printTasks(tasks)
