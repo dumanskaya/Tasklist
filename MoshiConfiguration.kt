@@ -7,14 +7,10 @@ import java.time.LocalTime
 
 class LocalDateAdapter: JsonAdapter<LocalDate>() {
     @FromJson
-    override fun fromJson(reader: JsonReader): LocalDate? {
-        return try {
-            val date = reader.nextString()
-            val (year, month, day) = date.split('-').map { it.toInt() }
-            LocalDate(year, month, day)
-        } catch (e: Exception) {
-            null
-        }
+    override fun fromJson(reader: JsonReader): LocalDate {
+        val date = reader.nextString()
+        val (year, month, day) = date.split('-').map { it.toInt() }
+        return LocalDate(year, month, day)
     }
     @ToJson
     override fun toJson(writer: JsonWriter, value: LocalDate?) {
@@ -26,14 +22,10 @@ class LocalDateAdapter: JsonAdapter<LocalDate>() {
 
 class LocalTimeAdapter: JsonAdapter<LocalTime>() {
     @FromJson
-    override fun fromJson(reader: JsonReader): LocalTime? {
-        return try {
-            val time = reader.nextString()
-            val (hours, minutes) = time.split(":").map { it.toInt() }
-            LocalTime.of(hours, minutes)
-        } catch (e: Exception) {
-            null
-        }
+    override fun fromJson(reader: JsonReader): LocalTime {
+        val time = reader.nextString()
+        val (hours, minutes) = time.split(":").map { it.toInt() }
+        return LocalTime.of(hours, minutes)
     }
     @ToJson
     override fun toJson(writer: JsonWriter, value: LocalTime?) {

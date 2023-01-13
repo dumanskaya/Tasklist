@@ -98,7 +98,12 @@ fun main() {
     val jsonFile = File(FILE_NAME)
     var tasks = mutableListOf<Task>()
     if (jsonFile.exists()) {
-        tasks = taskListAdapter.fromJson(jsonFile.readText())!!.toMutableList()
+        try {
+            tasks = taskListAdapter.fromJson(jsonFile.readText())!!.toMutableList()
+        } catch (e: Exception) {
+            System.err.println("Error reading json file: $FILE_NAME, ${e.message}")
+            return
+        }
     }
     while (true) {
         println("Input an action (add, print, edit, delete, end):")

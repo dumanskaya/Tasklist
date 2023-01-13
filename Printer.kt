@@ -6,7 +6,6 @@ fun centerString(obj: Any, width: Int): String {
     return value.padStart(n / 2 + value.length).padEnd(width)
 }
 
-
 fun splitAndPadDescription(lines: List<String>, width: Int): List<String> = lines
     .map {it.chunked(width)}
     .flatten()
@@ -39,7 +38,7 @@ class Table(
 
     private fun printTask(task: Task, index: Int) {
         val widths = getWidths()
-        val taskWidth = columns.first { it.name ==  "Task"}.width
+        val taskWidth = columns.first { it.name == "Task"}.width
         val printable = task.getPrintableData(index, taskWidth)
         val nRows = printable.maxOfOrNull { it.size } ?: 0
         for (i in 0 until nRows) {
