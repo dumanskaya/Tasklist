@@ -56,23 +56,13 @@ class Task {
         println("The task is changed")
     }
 
-//    fun getPrintableList(index: Int, descriptionWidth: Int): List<List<String>> {
-//        var printable = listOf("${index + 1}", date, time,
-//            priority.getColor(), tagColored())
-//            .map { s -> listOf(s.toString()) }
-//        printable += splitAndPadDescription(description.value!!, descriptionWidth)
-//    }
-
-    fun println(index: Int) {
-        val firstLine = addVerticalBorders(listOf("${index + 1}", date, time,
-            priority.getColor(), tagColored())
-            .mapIndexed { j, s -> centerString(s, widths[j]) })
-        val descriptions = splitAndPadDescription(description.value!!, TASK_WIDTH)
-        val n = descriptions.size
-        println("$firstLine${descriptions[0]}$VERTICAL_BORDER")
-        for (i in 1 until n) {
-            println("${emptyRowWithBorders()}${descriptions[i]}$VERTICAL_BORDER")
-        }
+    fun getPrintableData(index: Int, descriptionWidth: Int): MutableList<List<String>> {
+        val printable = listOf("${index + 1}", date, time, priority.getColor(), tagColored())
+            .map { s -> listOf(s.toString()) }.toMutableList()
+        val descriptions = splitAndPadDescription(description.value ?: emptyList<String>(),
+            descriptionWidth)
+        printable.add(descriptions)
+        return printable
     }
 }
 
@@ -95,34 +85,16 @@ fun inputValidIndex(n: Int): Int {
     }
 }
 
-fun printTasks(tasks: MutableList<Task>) {
-    if (tasks.isEmpty()) {
-        println("No tasks have been input")
-    } else {
-        val horizontalLine = getHorizontalLine(HORIZONTAL_BORDER, BORDER_KNOT)
-        println(horizontalLine)
-        println(getHeader())
-        println(horizontalLine)
-        for ((i, task) in tasks.withIndex()) {
-            task.println(i)
-            println(horizontalLine)
-        }
-    }
-}
-
-fun editTask(tasks: MutableList<Task>) {
-    if (tasks.isEmpty()) return
-    tasks[inputValidIndex(tasks.size)].edit()
-}
-
-fun deleteTask(tasks: MutableList<Task>) {
-    if (tasks.isNotEmpty()) {
-        tasks.removeAt(inputValidIndex(tasks.size))
-        println("The task is deleted")
-    }
-}
-
 fun main() {
+    val table = Table(listOf(
+        TableColumn("N", 4),
+        TableColumn("Date", 12),
+        TableColumn("Time", 7),
+        TableColumn("Priority", 3, "P"),
+        TableColumn("Tag", 3, "D"),
+        TableColumn("Task", 44, "Task "),
+    ))
+
     val jsonFile = File(FILE_NAME)
     var tasks = mutableListOf<Task>()
     if (jsonFile.exists()) {
@@ -135,14 +107,17 @@ fun main() {
                 val task = inputTask()
                 if (task.isValid()) tasks.add(task)
             }
-            "print" -> printTasks(tasks)
+            "print" -> table.printTasks(tasks)
             "edit" -> {
-                printTasks(tasks)
-                editTask(tasks)
+                table.printTasks(tasks)
+                if (tasks.isNotEmpty()) tasks[inputValidIndex(tasks.size)].edit()
             }
             "delete" -> {
-                printTasks(tasks)
-                deleteTask(tasks)
+                table.printTasks(tasks)
+                if (tasks.isNotEmpty()) {
+                    tasks.removeAt(inputValidIndex(tasks.size))
+                    println("The task is deleted")
+                }
             }
             "end" -> {
                 jsonFile.writeText(taskListAdapter.toJson(tasks))
